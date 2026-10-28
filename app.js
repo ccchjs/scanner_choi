@@ -9,6 +9,7 @@ function toast(t) {
 function show(n) {
   for (const k in V) V[k].hidden = k !== n;
   n === 'cam' ? startCam() : stopCam();
+  if (typeof setExp === 'function') setExp();
 }
 
 /* ---------- Camera ---------- */
@@ -201,6 +202,7 @@ function render() {
   const ec = $('#ec'); ec.width = cur.width; ec.height = cur.height;
   ec.getContext('2d').drawImage(cur, 0, 0);
   document.querySelectorAll('.modes button').forEach(b => b.classList.toggle('on', b.dataset.m === mode));
+  setExp();
 }
 document.querySelectorAll('.modes button').forEach(b => b.onclick = () => { mode = b.dataset.m; render(); });
 $('#back').onclick = () => { show('crop'); drawCrop(); };
@@ -223,10 +225,19 @@ function updateTray() {
     d.append(c, x); t.append(d);
   });
   $('#count').textContent = pages.length ? pages.length + ' page' + (pages.length > 1 ? 's' : '') : '';
-  document.querySelectorAll('.exports button').forEach(b => b.disabled = !pages.length);
+  setExp();
 }
 
 /* ---------- Export ---------- */
+function list() {
+  const L = pages.slice();
+  if (cur && !V.edit.hidden && !pages.some(p => p.c === cur)) L.push({ c: cur });
+  return L;
+}
+function setExp() {
+  const n = list().length;
+  document.querySelectorAll('.exports button').forEach(b => b.disabled = !n);
+}
 const blobP = (c, t, q) => new Promise(r => c.toBlob(r, t, q));
 function download(blob, name) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
@@ -236,7 +247,7 @@ function download(blob, name) {
 async function toPDF() {
   if (!window.jspdf) return toast('Hindi pa na-load ang PDF library. Kailangan ng internet sa unang gamit.');
   const { jsPDF } = window.jspdf; let doc;
-  pages.forEach((p, i) => {
+  list().forEach((p, i) => {
     const o = p.c.width > p.c.height ? 'l' : 'p';
     if (!i) doc = new jsPDF({ orientation: o, unit: 'mm', format: 'a4' }); else doc.addPage('a4', o);
     const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
@@ -248,7 +259,7 @@ async function toPDF() {
 async function toDocx() {
   if (!window.docx) return toast('Hindi pa na-load ang Word library. Kailangan ng internet sa unang gamit.');
   const { Document, Packer, Paragraph, ImageRun } = window.docx, kids = [];
-  for (const p of pages) {
+  for (const p of list()) {
     const b = await blobP(p.c, 'image/jpeg', .92);
     let w = 600, h = Math.round(w * p.c.height / p.c.width);
     if (h > 900) { w = Math.round(w * 900 / h); h = 900; }
@@ -257,8 +268,9 @@ async function toDocx() {
   download(await Packer.toBlob(new Document({ sections: [{ children: kids }] })), 'scan.docx');
 }
 async function toImages(type, ext) {
-  for (let i = 0; i < pages.length; i++) {
-    download(await blobP(pages[i].c, type, .92), 'scan-' + (i + 1) + '.' + ext);
+  const L = list();
+  for (let i = 0; i < L.length; i++) {
+    download(await blobP(L[i].c, type, .92), 'scan-' + (i + 1) + '.' + ext);
     await new Promise(r => setTimeout(r, 350));
   }
 }
