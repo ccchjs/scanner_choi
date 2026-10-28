@@ -8,7 +8,7 @@ section{width:100%;max-width:900px;display:flex;flex-direction:column;align-item
 section[hidden]{display:none}
 video,#cc,#ec{max-width:100%;max-height:62vh;border-radius:6px;background:#000}
 video{width:100%;object-fit:contain}
-#ec{width:auto;height:auto;background:#fff}
+#ec{width:auto;height:auto;max-height:52vh;background:#fff}
 #cc{touch-action:none}
 .hint{margin:0;font-size:14px;opacity:.75}
 .bar{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
